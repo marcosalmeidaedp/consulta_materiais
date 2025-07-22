@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de consulta de materiais para estruturas elétricas">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <title>Consulta de Materiais</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --secondary-color: #f2f2f2;
+            --border-color: #ddd;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --white: #fff;
+            --shadow: 0 0 10px rgba(0,0,0,0.1);
+            --radius: 8px;
+            --radius-small: 4px;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        
+        h1, h2, h3 {
+            color: var(--text-color);
+            margin-top: 0;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        h3 {
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+        }
+        
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #e0e0e0;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 1rem;
+        }
+        
+        .tab-button:hover, .tab-button:focus {
+            background-color: #d0d0d0;
+        }
+        
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 5px 5px;
+            background-color: var(--white);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"], select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-small);
+            flex-grow: 1;
+            min-width: 200px;
+            font-size: 1rem;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover, button:focus {
+            background-color: var(--primary-hover);
+            outline: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+        
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: var(--secondary-color);
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .alca-selector {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: var(--radius-small);
+        }
+        
+        .alca-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-buttons {
+                flex-direction: column;
+            }
+            
+            .tab-button {
+                border-radius: var(--radius-small);
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            input[type="text"], select, button {
+                width: 100%;
+            }
+            
+            th, td {
+                font-size: 14px;
+                padding: 8px;
+                word-break: break-word;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+        
+        /* Focus styles for accessibility */
+        :focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Consulta de Materiais</h1>
+        </header>
+        
+        <main>
+            <div class="tab-container">
+                <!-- Botão de pesquisa isolado -->
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="openTab('pesquisa')" id="pesquisaTab" aria-selected="true" aria-controls="pesquisa">Pesquisa</button>
+                </div>
+
+                <!-- Cabeçalho de estruturas -->
+                <h2 id="estruturasHeading">Estruturas</h2>
+
+                <!-- Botões das estruturas separados -->
+                <div class="tab-buttons" role="tablist" aria-labelledby="estruturasHeading">
+                    <button class="tab-button" onclick="openTab('tp1')" id="tp1Tab" aria-selected="false" aria-controls="tp1" role="tab">TP 1 TRIF</button>
+                    <button class="tab-button" onclick="openTab('tp2')" id="tp2Tab" aria-selected="false" aria-controls="tp2" role="tab">TP 2 TRIF</button>
+                    <button class="tab-button" onclick="openTab('tp3')" id="tp3Tab" aria-selected="false" aria-controls="tp3" role="tab">TP 3 TRIF</button>
+                    <button class="tab-button" onclick="openTab('tp4')" id="tp4Tab" aria-selected="false" aria-controls="tp4" role="tab">TP 4 TRIF</button>
+                </div>
+            </div>
+            
+            <!-- Pesquisa Tab -->
+            <div id="pesquisa" class="tab-content active" role="tabpanel" aria-labelledby="pesquisaTab">
+                <div class="search-box">
+                    <label for="searchInput" class="sr-only">Digite código ou descrição do material</label>
+                    <input type="text" id="searchInput" placeholder="Digite código ou descrição do material..." aria-label="Campo de pesquisa">
+                    <button onclick="searchMaterials()" aria-label="Pesquisar materiais">Pesquisar</button>
+                </div>
+                <div id="searchResults">
+                    <table>
+                        <caption class="sr-only">Resultados da pesquisa de materiais</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Código</th>
+                                <th scope="col">Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="searchResultsBody">
+                            <!-- Results will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- TP 1 TRIF Tab -->
+            <div id="tp1" class="tab-content" role="tabpanel" aria-labelledby="tp1Tab" hidden>
+                <h2>Materiais para Estrutura TP 1 TRIF</h2>
+                <table>
+                    <caption class="sr-only">Lista de materiais para estrutura TP 1 TRIF</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Material</th>
+                            <th scope="col">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tp1Body">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- TP 2 TRIF Tab -->
+            <div id="tp2" class="tab-content" role="tabpanel" aria-labelledby="tp2Tab" hidden>
+                <h2>Materiais para Estrutura TP 2 TRIF</h2>
+                <table>
+                    <caption class="sr-only">Lista de materiais para estrutura TP 2 TRIF</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Material</th>
+                            <th scope="col">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tp2Body">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- TP 3 TRIF Tab -->
+            <div id="tp3" class="tab-content" role="tabpanel" aria-labelledby="tp3Tab" hidden>
+                <h2>Materiais para Estrutura TP 3 TRIF</h2>
+                <div class="alca-selector">
+                    <label for="alcaType3">Selecione o tipo de ALÇA:</label>
+                    <select id="alcaType3" onchange="updateTp3Materials()" aria-label="Selecione o tipo de ALÇA para TP 3 TRIF">
+                        <option value="30050149">ALCA PREF DIST CA 336,4 AWG</option>
+                        <option value="30050150">ALÇA PREF DIST CA CAA 1/0AWG</option>
+                        <option value="30050152">ALCA PREF DIST CA CAA 2AWG</option>
+                        <option value="30050154">ALÇA PREF DIST CA CAA 4/0AWG</option>
+                        <option value="30050155">ALCA PREF DIST CA CAA 4AWG</option>
+                    </select>
+                </div>
+                <table>
+                    <caption class="sr-only">Lista de materiais para estrutura TP 3 TRIF</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Material</th>
+                            <th scope="col">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tp3Body">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- TP 4 TRIF Tab -->
+            <div id="tp4" class="tab-content" role="tabpanel" aria-labelledby="tp4Tab" hidden>
+                <h2>Materiais para Estrutura TP 4 TRIF</h2>
+                <div class="alca-selector">
+                    <label for="alcaType4">Selecione o tipo de ALÇA:</label>
+                    <select id="alcaType4" onchange="updateTp4Materials()" aria-label="Selecione o tipo de ALÇA para TP 4 TRIF">
+                        <option value="30050149">ALCA PREF DIST CA 336,4 AWG</option>
+                        <option value="30050150">ALÇA PREF DIST CA CAA 1/0AWG</option>
+                        <option value="30050152">ALCA PREF DIST CA CAA 2AWG</option>
+                        <option value="30050154">ALÇA PREF DIST CA CAA 4/0AWG</option>
+                        <option value="30050155">ALCA PREF DIST CA CAA 4AWG</option>
+                    </select>
+                </div>
+                <table>
+                    <caption class="sr-only">Lista de materiais para estrutura TP 4 TRIF</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Material</th>
+                            <th scope="col">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tp4Body">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Database of materials
+        const materials = [
+            { code: "30050165", description: "ALCA ESTAI PREF P/CABO ACO 9,5mm (3/8)" },
+            { code: "30050163", description: "ALCA PREF CABO ACO 4,87MM PRETO" },
+            { code: "30050166", description: "ALCA PREF CABO COBERTO CA 70MM2 - 15KV" },
+            { code: "30050149", description: "ALCA PREF DIST CA 336,4 AWG" },
+            { code: "30050150", description: "ALÇA PREF DIST CA CAA 1/0AWG" },
+            { code: "30050152", description: "ALCA PREF DIST CA CAA 2AWG" },
+            { code: "30050154", description: "ALÇA PREF DIST CA CAA 4/0AWG" },
+            { code: "30050155", description: "ALCA PREF DIST CA CAA 4AWG" },
+            { code: "30050173", description: "ALÇA RAMAL SERVIÇO CABO ISOLADO 10/16MM²" },
+            { code: "30050174", description: "ALÇA RAMAL SERVIÇO CABO ISOLADO 25MM² LJ" },
+            { code: "30050175", description: "ALÇA RAMAL SERVIÇO CABO ISOLADO 35MM² VM" },
+            { code: "30050176", description: "ALÇA RAMAL SERVIÇO CABO ISOLADO 70MM² PT" },
+            { code: "30050345", description: "ANTENA EXTERNA 900MHZ - 17DBI" },
+            { code: "30050346", description: "ANTENA EXTERNA 900MHZ - 20DBI" },
+            { code: "30050463", description: "ARRUELA LISA QUADRADA ACO ZI 38X3X18MM" },
+            { code: "10050870", description: "CABO 1/0 AWG CA ALUMINIO - POPPY" },
+            { code: "10051202", description: "CABO 1/0 AWG CAA ALUMINIO - RAVEN" },
+            { code: "10050874", description: "CABO 2 AWG CA ALUMINIO - IRIS" },
+            { code: "10050898", description: "CABO 2 AWG CAA ALUMINIO - SPARROW" },
+            { code: "10050897", description: "CABO 4 AWG CA ALUMINIO - ROSE" },
+            { code: "10051206", description: "CABO 4 AWG CAA ALUMINIO - SWAN" },
+            { code: "10050877", description: "CABO 4/0 AWG CA ALUMINIO - OXLIP" },
+            { code: "10050899", description: "CABO 4/0 AWG CAA ALUMINIO - PENGUIN" },
+            { code: "30051371", description: "CABO ANTENA DE GANHO 10M" },
+            { code: "10050583", description: "CABO ANTI-FURTO AL XLPE 1X16+16MM2" },
+            { code: "30051554", description: "CABO COBRE ISOLADO PVC BWF 120MM2 750V PR" },
+            { code: "30051722", description: "CABO COBRE ISOLADO PVC BWF 16MM2 750V PR" },
+            { code: "30051553", description: "CABO COBRE ISOLADO PVC BWF 35MM2 750V PR" },
+            { code: "30051482", description: "CABO COBRE ISOLADO PVC BWF 70MM2 750V PR" },
+            { code: "30051571", description: "CABO COBRE NU 50MM" },
+            { code: "30051709", description: "CABO COBRE PROTEGIDO 15KV XLPE CZ 16MM2" },
+            { code: "10050838", description: "CABO RAMAL XLPE 0,6/1KV 1X1X16+16MM2 NI" },
+            { code: "10050544", description: "CABO RAMAL XLPE 0,6/1KV 2X1X16+16MM2 NI" },
+            { code: "10050545", description: "CABO RAMAL XLPE 0,6/1KV 2X1X25+25MM2 NI" },
+            { code: "10050855", description: "CABO RAMAL XLPE 0,6/1KV 2X1X35+35MM2 NI" },
+            { code: "10050546", description: "CABO RAMAL XLPE 0,6/1KV 2X1X70+70MM2 NI" },
+            { code: "10050547", description: "CABO RAMAL XLPE 0,6/1KV 3X1X120+70MM2 NI" },
+            { code: "10050549", description: "CABO RAMAL XLPE 0,6/1KV 3X1X16+16MM2 NI" },
+            { code: "10050551", description: "CABO RAMAL XLPE 0,6/1KV 3X1X25+25MM2 NI" },
+            { code: "10050552", description: "CABO RAMAL XLPE 0,6/1KV 3X1X35+35MM2 NI" },
+            { code: "10050553", description: "CABO RAMAL XLPE 0,6/1KV 3X1X70+70MM2 NI" },
+            { code: "30052775", description: "CARTUCHO METÁLICO AZUL CONECTOR CUNHA" },
+            { code: "30052776", description: "CARTUCHO METÁLICO VERM CONECTOR CUNHA" },
+            { code: "10051424", description: "CHAVE BY PASS 15KV 630A - POLIMERICA - RT" },
+            { code: "30052957", description: "CHAVE DE AFERIÇÃO COM TOMADA 600VA" },
+            { code: "10051443", description: "CHAVE FACA POLIMERICA 15KV 630A" },
+            { code: "30053053", description: "CHAVE FUSIVEL 15KV 300A POLIMERICA" },
+            { code: "10051358", description: "CHAVE RELIGADORA FUSIVEL POLIMERICA 15KV 100A" },
+            { code: "30053134", description: "CINTA POSTE CIRCULAR 160MM" },
+            { code: "30053136", description: "CINTA POSTE CIRCULAR 180MM" },
+            { code: "30053137", description: "CINTA POSTE CIRCULAR 200MM" },
+            { code: "30053138", description: "CINTA POSTE CIRCULAR 220MM" },
+            { code: "30053140", description: "CINTA POSTE CIRCULAR 240MM" },
+            { code: "30053143", description: "CINTA POSTE CIRCULAR 280MM" },
+            { code: "30053146", description: "CINTA POSTE CIRCULAR 320MM" },
+            { code: "30053150", description: "CINTA POSTE CIRCULAR 380MM" },
+            { code: "30053719", description: "CONECTOR CUNHA CN1 - 336,4 X 336,4 MCM" },
+            { code: "30053720", description: "CONECTOR CUNHA CN10 - 1/0 X 2 AWG" },
+            { code: "30053437", description: "CONECTOR CUNHA CN2 - 336,4 X 4/0 AWG" },
+            { code: "30053439", description: "CONECTOR CUNHA CN4 - 336,4 X 1/0 AWG" },
+            { code: "30053440", description: "CONECTOR CUNHA CN5 - 336,4 X 6-4 AWG" },
+            { code: "30053441", description: "CONECTOR CUNHA CN50 - 1/0 AWG X 4 AWG" },
+            { code: "30053442", description: "CONECTOR CUNHA CN51 - 4 AWG X 4 AWG" },
+            { code: "30053732", description: "CONECTOR CUNHA CN52 - 4 AWG X 6 AWG" },
+            { code: "30053443", description: "CONECTOR CUNHA CN53 - 2 AWG X 4 AWG" },
+            { code: "30053444", description: "CONECTOR CUNHA CN6 - 4/0 X 2 AWG" },
+            { code: "30053445", description: "CONECTOR CUNHA CN7 - 1/0 X 1/0 AWG" },
+            { code: "30053446", description: "CONECTOR CUNHA CN9 - 120MM X 4/0 AWG" },
+            { code: "30053435", description: "CONECTOR CUNHA RAMAL TIPO I - CINZA" },
+            { code: "30053521", description: "CONECTOR CUNHA RAMAL TIPO II - VERDE" },
+            { code: "30053432", description: "CONECTOR CUNHA RAMAL TIPO III-IV-V - COLORIDO" },
+            { code: "30053522", description: "CONECTOR CUNHA RAMAL TIPO VI - AZUL-BRANCO" },
+            { code: "30053436", description: "CONECTOR CUNHA RAMAL TIPO VII - Vermelho-BRANCO" },
+            { code: "30053523", description: "CONECTOR CUNHA RAMAL TIPO VIII - VERDE-BRANCO" },
+            { code: "30053539", description: "CONECTOR KS COBRE 10-35 MM²" },
+            { code: "30053549", description: "CONECTOR KS COBRE 10-70MM C/ESP" },
+            { code: "30053552", description: "CONECTOR KS COBRE 8-6 AWG S/ESP" },
+            { code: "30053944", description: "CONECTOR PERFURANTE 16~120X4~35MM² - MEDIO" },
+            { code: "30053945", description: "CONECTOR PERFURANTE 16~95X1,5~10MM - RAMALZINHO" },
+            { code: "30053946", description: "CONECTOR PERFURANTE 25~120X25~120MM² - GRANDE" },
+            { code: "30053933", description: "CONECTOR PERFURANTE HIBRIDO 4-4/0AWG 10A35MM2" },
+            { code: "30053934", description: "CONECTOR PERFURANTE HIBRIDO 4-4/0AWG 16A95MM2" },
+            { code: "30053528", description: "CONECTOR TERMINAL ESTRANGUL KLOK TIPO 3 1FURO" },
+            { code: "30053533", description: "CONECTOR TERMINAL ESTRANGUL KLOK TIPO 4 2FUROS" },
+            { code: "30053529", description: "CONECTOR TERMINAL ESTRANGUL KLOK TIPO 5 2FUROS" },
+            { code: "30053531", description: "CONECTOR TERMINAL ESTRANGUL KLOK TIPO 7 2FUROS" },
+            { code: "30054507", description: "CORDOALHA AÇO CARB 9,5MM 7F CL.B MR/SM (3/8)" },
+            { code: "30054582", description: "CRUZETA FIBRA 90X112,5MM 2,8M" },
+            { code: "30054556", description: "CRUZETA FIBRA 90X112,5MM 5M" },
+            { code: "30054580", description: "CRUZETA FIBRA 90X90MM 2,4M" },
+            { code: "30054579", description: "CRUZETA FIBRA 90X90MM 2M" },
+            { code: "30055007", description: "ELO FUSIVEL DISTRIBUIC€O H 1A" },
+            { code: "30055008", description: "ELO FUSIVEL DISTRIBUIC€O H 2A" },
+            { code: "30055009", description: "ELO FUSIVEL DISTRIBUIC€O H 3A" },
+            { code: "30055010", description: "ELO FUSIVEL DISTRIBUIC€O H 5A" },
+            { code: "30055012", description: "ELO FUSIVEL DISTRIBUIC€O K 12A" },
+            { code: "30055014", description: "ELO FUSIVEL DISTRIBUIC€O K 20A" },
+            { code: "30055017", description: "ELO FUSIVEL DISTRIBUIC€O K 30A" },
+            { code: "30055023", description: "ELO FUSIVEL DISTRIBUIC€O K 8A" },
+            { code: "30055036", description: "EMENDA AUTOMATICA 1/0AWG/2/0AWG/70MM² AMARELA" },
+            { code: "30055034", description: "EMENDA AUTOMATICA 2AWG/4AWG/50MM² VERMELHA" },
+            { code: "30055032", description: "EMENDA AUTOMATICA 336,4MCM/185MM² VERDE" },
+            { code: "30055037", description: "EMENDA AUTOMATICA 4/0AWG ROSA" },
+            { code: "30055238", description: "ESPAÇADOR P/ REDE BT NUA 1/0 À 336,4 AWG" },
+            { code: "30055741", description: "FIO AMARRACAO NU ALUMINIO RECOZIDO 4AWG" },
+            { code: "30055705", description: "FIO ISOLADO COBRE PVC - 2,50MM2" },
+            { code: "30055789", description: "FITA ISOLANTE ADESIVA" },
+            { code: "30055783", description: "FITA ISOLANTE AUTA FUSAO - 19MMX10M" },
+            { code: "30053453", description: "GARRA L VIVA 2-1/0 D 16 35MM2" },
+            { code: "30056366", description: "HASTE ATERRAMENTO COBREADA RABICHO 2,40M" },
+            { code: "30056455", description: "ISOLADOR BASTÃO POLIMERICO 15kV" },
+            { code: "30056458", description: "ISOLADOR PILAR PORCELANA 15KV 110KV" },
+            { code: "30056462", description: "ISOLADOR ROLDANA PORCELANA" },
+            { code: "30056893", description: "LAMINA PARA BF 15KV 300A 285MM" },
+            { code: "30057505", description: "MANILHA SAPATILHA DISTRIBUIÇÃO" },
+            { code: "30057525", description: "MÃO FRANCESA CANTONEIRA - TIPO 1" },
+            { code: "30057526", description: "MÃO FRANCESA CANTONEIRA - TIPO 2" },
+            { code: "30057527", description: "MÃO FRANCESA CANTONEIRA - TIPO 3" },
+            { code: "30057537", description: "MÃO FRANCESA PLANA - TIPO 1" },
+            { code: "30057538", description: "MÃO FRANCESA PLANA - TIPO 2" },
+            { code: "30057971", description: "OLHAL PARAFUSO AÇO 16mm 5000DAN" },
+            { code: "30058369", description: "PARA RAIO POLIMERICO ZNO 12KV 10KA" },
+            { code: "30058120", description: "PARAFUSO ABAULADO M16 X 45 mm" },
+            { code: "30058123", description: "PARAFUSO ABAULADO M16 X 70 mm" },
+            { code: "30058116", description: "PARAFUSO ABAULADO M16 X 150 mm" },
+            { code: "30058226", description: "PARAFUSO CABEÇA QUADRADA M16 X 125 MM" },
+            { code: "30058229", description: "PARAFUSO CABEÇA QUADRADA M16 X 150 MM" },
+            { code: "30058232", description: "PARAFUSO CABEÇA QUADRADA M16 X 200 MM" },
+            { code: "30058234", description: "PARAFUSO CABEÇA QUADRADA M16 X 250 MM" },
+            { code: "30058235", description: "PARAFUSO CABEÇA QUADRADA M16 X 300 MM" },
+            { code: "30058238", description: "PARAFUSO CABEÇA QUADRADA M16 X 350 MM" },
+            { code: "30058241", description: "PARAFUSO CABEÇA QUADRADA M16 X 400 MM" },
+            { code: "30058244", description: "PARAFUSO CABEÇA QUADRADA M16 X 450 MM" },
+            { code: "30058246", description: "PARAFUSO CABEÇA QUADRADA M16 X 500 MM" },
+            { code: "30058250", description: "PARAFUSO CABEÇA QUADRADA M16 X 550 MM" },
+            { code: "30058252", description: "PARAFUSO CABEÇA QUADRADA M16 X 600 MM" },
+            { code: "30058254", description: "PARAFUSO CABEÇA QUADRADA M16 X 650 MM" },
+            { code: "30058702", description: "PELÍCULA ADESIVA NUMERO 0 - ZERO" },
+            { code: "30058694", description: "PELÍCULA ADESIVA NUMERO 1 - UM" },
+            { code: "30058695", description: "PELÍCULA ADESIVA NUMERO 2 - DOIS" },
+            { code: "30058696", description: "PELÍCULA ADESIVA NUMERO 3 - TRES" },
+            { code: "30058697", description: "PELÍCULA ADESIVA NUMERO 4 - QUATRO" },
+            { code: "30058698", description: "PELÍCULA ADESIVA NUMERO 5 - CINCO" },
+            { code: "30058699", description: "PELÍCULA ADESIVA NUMERO 6 - SEIS" },
+            { code: "30058700", description: "PELÍCULA ADESIVA NUMERO 7 - SETE" },
+            { code: "30058701", description: "PELÍCULA ADESIVA NUMERO 8 - OITO" },
+            { code: "30058796", description: "PINO CRUZETA ISOLADOR PILAR - 169MM" },
+            { code: "30058798", description: "PINO PARA SUPORTE ISOLADOR PILAR - 85MM" },
+            { code: "30059058", description: "PORCA QUADRADA 16MM CHANFRO" },
+            { code: "30059102", description: "PORTA FUSIVEL 15,0KV 100A 10KA" },
+            { code: "30059233", description: "PROTETOR CRUZETA (ESPICULA) CONTRA PÁSSAROS" },
+            { code: "30060010", description: "SELA PARA CRUZETA DE AÇO" },
+            { code: "30060011", description: "SELA PARA CRUZETA DE MADEIRA E CONCRETO" },
+            { code: "30060338", description: "SUPORTE CHAVE SECCIONADORA 1P INCLINADA" },
+            { code: "30060253", description: "SUPORTE CHAVE SECCIONADORA 1P PLANA" },
+            { code: "30060345", description: "SUPORTE L ACO 2 FUROS" },
+            { code: "30060349", description: "SUPORTE P/ NUMEROS REFLETIVOS 440X95X4" },
+            { code: "30060354", description: "SUPORTE T ACO 540X10MM" },
+            { code: "30060360", description: "SUPORTE TOPO PARA ISOLADOR PILAR" },
+            { code: "30060737", description: "TERMINAL TUBULAR TIPO 1 - 8AWG 10mm² Vermelho" },
+            { code: "30060730", description: "TERMINAL TUBULAR TIPO 2 - 6AWG 16mm² Azuk" },
+            { code: "30060728", description: "TERMINAL TUBULAR TIPO 3 - 4AWG 25mm² Amarelo" }
+        ];
+
+        // Structure materials
+        const structureMaterials = {
+            tp1: [
+                { code: "30050463", quantity: 5 },
+                { code: "30058226", quantity: 2 },
+                { code: "30058234", quantity: 2 },
+                { code: "30054580", quantity: 1 },
+                { code: "30057538", quantity: 2 },
+                { code: "30059058", quantity: 4 },
+                { code: "30056458", quantity: 3 },
+                { code: "30058796", quantity: 3 }
+            ],
+            tp2: [
+                { code: "30050463", quantity: 14 },
+                { code: "30058226", quantity: 4 },
+                { code: "30058234", quantity: 1 },
+                { code: "30058238", quantity: 3 },
+                { code: "30058241", quantity: 3 },
+                { code: "30054580", quantity: 2 },
+                { code: "30057538", quantity: 4 },
+                { code: "30059058", quantity: 4 },
+                { code: "30056458", quantity: 6 },
+                { code: "30058796", quantity: 6 }
+            ],
+            tp3: [
+                { code: "30050463", quantity: 11 },
+                { code: "30058226", quantity: 4 },
+                { code: "30058234", quantity: 1 },
+                { code: "30058238", quantity: 3 },
+                { code: "30058241", quantity: 3 },
+                { code: "30057971", quantity: 3 },
+                { code: "30054580", quantity: 2 },
+                { code: "30057538", quantity: 4 },
+                { code: "30059058", quantity: 4 },
+                { code: "30056455", quantity: 3 },
+                { code: "30057505", quantity: 3 }
+            ],
+            tp4: [
+                { code: "30050463", quantity: 8 },
+                { code: "30058226", quantity: 4 },
+                { code: "30058234", quantity: 1 },
+                { code: "30058238", quantity: 3 },
+                { code: "30058241", quantity: 3 },
+                { code: "30057971", quantity: 6 },
+                { code: "30054580", quantity: 2 },
+                { code: "30057538", quantity: 4 },
+                { code: "30059058", quantity: 4 },
+                { code: "30056455", quantity: 6 },
+                { code: "30057505", quantity: 6 }
+            ]
+        };
+
+        // Function to open tabs with improved accessibility
+        function openTab(tabName) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            
+            // Hide all tab contents and set aria-selected to false
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                content.setAttribute('hidden', '');
+                content.setAttribute('aria-hidden', 'true');
+            });
+            
+            // Remove active class and aria-selected from all buttons
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+                button.setAttribute('aria-selected', 'false');
+            });
+            
+            // Show selected tab content and set button as active
+            const selectedTab = document.getElementById(tabName);
+            const selectedButton = document.querySelector(`.tab-button[onclick="openTab('${tabName}')"]`);
+            
+            if (selectedTab && selectedButton) {
+                selectedTab.classList.add('active');
+                selectedTab.removeAttribute('hidden');
+                selectedTab.setAttribute('aria-hidden', 'false');
+                
+                selectedButton.classList.add('active');
+                selectedButton.setAttribute('aria-selected', 'true');
+                selectedButton.focus();
+            }
+            
+            // Load structure materials when tab is opened
+            if (tabName === 'tp1') loadTp1Materials();
+            if (tabName === 'tp2') loadTp2Materials();
+            if (tabName === 'tp3') updateTp3Materials();
+            if (tabName === 'tp4') updateTp4Materials();
+        }
+
+        // Normalize text for search (better compatibility)
+        function normalize(text) {
+            return text
+                .normalize("NFD") // decompose accents
+                .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+                .toLowerCase(); // lowercase
+        }
+
+        // Improved search function with better mobile compatibility
+        function searchMaterials() {
+            const searchTerm = normalize(document.getElementById("searchInput").value.trim());
+            const keywords = searchTerm.split(/\s+/);
+            const resultsBody = document.getElementById("searchResultsBody");
+            resultsBody.innerHTML = "";
+
+            const filteredMaterials = materials.filter(material => {
+                const fullText = normalize(`${material.code} ${material.description}`);
+                return keywords.every(word => fullText.includes(word));
+            });
+
+            if (filteredMaterials.length === 0) {
+                resultsBody.innerHTML = `<tr><td colspan="2" class="no-results">Nenhum material encontrado</td></tr>`;
+                return;
+            }
+
+            filteredMaterials.forEach(material => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${material.code}</td>
+                    <td>${material.description}</td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Function to load TP1 materials
+        function loadTp1Materials() {
+            const tp1Body = document.getElementById("tp1Body");
+            tp1Body.innerHTML = "";
+            
+            structureMaterials.tp1.forEach(item => {
+                const material = materials.find(m => m.code === item.code);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${material ? material.description : 'Material não encontrado'}</td>
+                    <td>${item.quantity}</td>
+                `;
+                tp1Body.appendChild(row);
+            });
+        }
+
+        // Function to load TP2 materials
+        function loadTp2Materials() {
+            const tp2Body = document.getElementById("tp2Body");
+            tp2Body.innerHTML = "";
+            
+            structureMaterials.tp2.forEach(item => {
+                const material = materials.find(m => m.code === item.code);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${material ? material.description : 'Material não encontrado'}</td>
+                    <td>${item.quantity}</td>
+                `;
+                tp2Body.appendChild(row);
+            });
+        }
+
+        // Function to update TP3 materials with selected ALÇA
+        function updateTp3Materials() {
+            const tp3Body = document.getElementById("tp3Body");
+            tp3Body.innerHTML = "";
+            
+            const selectedAlca = document.getElementById("alcaType3").value;
+            
+            // Add base materials
+            structureMaterials.tp3.forEach(item => {
+                const material = materials.find(m => m.code === item.code);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${material ? material.description : 'Material não encontrado'}</td>
+                    <td>${item.quantity}</td>
+                `;
+                tp3Body.appendChild(row);
+            });
+            
+            // Add selected ALÇA
+            const alcaMaterial = materials.find(m => m.code === selectedAlca);
+            const alcaRow = document.createElement("tr");
+            alcaRow.innerHTML = `
+                <td>${selectedAlca}</td>
+                <td>${alcaMaterial ? alcaMaterial.description : 'Material não encontrado'}</td>
+                <td>3</td>
+            `;
+            tp3Body.appendChild(alcaRow);
+        }
+
+        // Function to update TP4 materials with selected ALÇA
+        function updateTp4Materials() {
+            const tp4Body = document.getElementById("tp4Body");
+            tp4Body.innerHTML = "";
+            
+            const selectedAlca = document.getElementById("alcaType4").value;
+            
+            // Add base materials
+            structureMaterials.tp4.forEach(item => {
+                const material = materials.find(m => m.code === item.code);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${material ? material.description : 'Material não encontrado'}</td>
+                    <td>${item.quantity}</td>
+                `;
+                tp4Body.appendChild(row);
+            });
+            
+            // Add selected ALÇA
+            const alcaMaterial = materials.find(m => m.code === selectedAlca);
+            const alcaRow = document.createElement("tr");
+            alcaRow.innerHTML = `
+                <td>${selectedAlca}</td>
+                <td>${alcaMaterial ? alcaMaterial.description : 'Material não encontrado'}</td>
+                <td>6</td>
+            `;
+            tp4Body.appendChild(alcaRow);
+        }
+
+        // Initialize the page with better mobile compatibility
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial data
+            searchMaterials();
+            loadTp1Materials();
+            loadTp2Materials();
+            updateTp3Materials();
+            updateTp4Materials();
+            
+            // Add event listener for input in search (better for mobile)
+            document.getElementById("searchInput").addEventListener('input', searchMaterials);
+            
+            // Add keyboard navigation for tabs
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+        });
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('service-worker.js')
+          .then(() => console.log('Service Worker registrado com sucesso!'))
+          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+        }
+    </script>
+</body>
+</html>
