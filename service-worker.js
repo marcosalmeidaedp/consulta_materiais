@@ -1,40 +1,5 @@
-
-const CACHE_NAME = 'consulta-materiais-v1';
-const FILES_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './service-worker.js',
-  './assets/icon-192.png',
-  './assets/icon-512.png'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(FILES_TO_CACHE);
-    })
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keyList =>
-      Promise.all(keyList.map(key => {
-        if (key !== CACHE_NAME) {
-          return caches.delete(key);
-        }
-      }))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
-});
+const CACHE_NAME = 'consulta-materiais-v2';
+const ASSETS = ['./','./index.html','./manifest.json','./service-worker.js','./assets/edp-app.svg'];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('consulta-materiais-') && k !== CACHE_NAME).map(k => caches.delete(k))))); self.clients.claim(); });
+self.addEventListener('fetch', e => { if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin) return; e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request))); });
